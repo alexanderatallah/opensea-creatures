@@ -11,10 +11,10 @@ contract ProxyRegistry {
 }
 
 /**
- * @title TradeableERC721Token
- * TradeableERC721Token - ERC721 contract that whitelists a trading address, and has minting functionality.
+ * @title WyvernERC721Token
+ * WyvernERC721Token - ERC721 contract that whitelists a trading address, has minting functionality, and is locked to trading on Wyvern proxies.
  */
-contract TradeableERC721Token is ERC721Full, Ownable {
+contract WyvernERC721Token is ERC721Full, Ownable {
   using Strings for string;
 
   address proxyRegistryAddress;
@@ -78,5 +78,26 @@ contract TradeableERC721Token is ERC721Full, Ownable {
     }
 
     return super.isApprovedForAll(owner, operator);
+  }
+
+  /**
+   * Override transferFrom to only allow transfers from Wyvern proxies
+   * @param _from current owner of the token
+   * @param _to address to receive the ownership of the given token ID
+   * @param _tokenId uint256 ID of the token to be transferred
+  */
+  function transferFrom(
+    address _from,
+    address _to,
+    uint256 _tokenId
+  )
+    public
+  {
+    address owner = ownerOf(_tokenId);
+    ProxyRegistry proxyRegistry = ProxyRegistry(proxyRegistryAddress);
+    address ownerProxy = address(proxyRegistry.proxies(owner));
+    require(ownerProxy == msg.sender, "Transfer must be called from a Wyvern proxy.");
+
+    super.transferFrom(_from, _to, _tokenId);
   }
 }
